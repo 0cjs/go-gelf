@@ -1,28 +1,20 @@
 package gelf
 
 import (
+	"errors"
 	"io"
-
-	"github.com/pkg/errors"
 )
 
 type stream struct {
 	w io.Writer
 }
 
-func NewStream(w io.Writer, delimiter byte) stream {
+func newStream(w io.Writer, delimiter byte) stream {
 	return stream{newDelimitedWriter(w, delimiter)}
 }
-func (s *stream) WriteMessage(m Message) error {
-	_, err := s.w.Write(messageToJSON(m))
-	return err
-}
 
-func (s *stream) Write(b []byte) (int, error) {
-	if err := s.WriteMessage(messageFromByteSlice(b)); err != nil {
-		return 0, err
-	}
-	return len(b), nil
+func (s stream) Write(b []byte) (int, error) {
+	return 0, nil
 }
 
 type delimitedWriter struct {

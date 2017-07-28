@@ -4,46 +4,34 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"errors"
+	"io"
 	"testing"
 
-	"encoding/json"
-
-	"io"
-
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
 var buf bytes.Buffer
 
-func TestNewStream(t *testing.T) {
-	_ = NewStream(&buf, 0)
-	_ = NewStream(&buf, '\n')
-}
+func TestNewWriter(t *testing.T) {
+	_, err := NewWriter(&buf, StreamEncoder(0))
+	assert.Nil(t, err)
+	_, err = NewWriter(&buf, StreamEncoder('\n'))
+	assert.Nil(t, err)
 
-func TestNewPacket(t *testing.T) {
-	_, err := NewPacket(&buf, 0, None, 0) // Let the library choose the MTU
+	_, err = NewWriter(&buf, PacketEncoder(0, None, 0)) // Let the library choose the MTU
 	assert.Nil(t, err)
-	_, err = NewPacket(&buf, 1400, Gzip, gzip.BestSpeed)
+	_, err = NewWriter(&buf, PacketEncoder(1400, Gzip, gzip.BestSpeed))
 	assert.Nil(t, err)
-	_, err = NewPacket(&buf, 1400, Zlib, zlib.BestCompression)
+	_, err = NewWriter(&buf, PacketEncoder(1400, Zlib, zlib.BestCompression))
 	assert.Nil(t, err)
-	_, err = NewPacket(&buf, 1234, 5, 0)
+	_, err = NewWriter(&buf, PacketEncoder(1234, 5, 0))
 	assert.EqualError(t, err, "invalid compression type")
 }
 
-func TestStream_Write(t *testing.T) {
+func TestWriter_Write(t *testing.T) {
 	buf := new(bytes.Buffer)
-	g := NewStream(buf, 0)
-	data := "qwrtyuio"
-	length, err := g.Write([]byte(data))
-	assert.Nil(t, err)
-	assert.Equal(t, len(data), length)
-}
-
-func TestPacket_Write(t *testing.T) {
-	buf := new(bytes.Buffer)
-	g, err := NewPacket(buf, 0, None, 0)
+	g, err := NewWriter(buf, StreamEncoder(0))
 	assert.Nil(t, err)
 	data := "qwrtyuio"
 	length, err := g.Write([]byte(data))
@@ -51,29 +39,14 @@ func TestPacket_Write(t *testing.T) {
 	assert.Equal(t, len(data), length)
 }
 
-func TestMessageFromByteSlice(t *testing.T) {
-
-}
-
-func TestMessageToJSON(t *testing.T) {
-	m := Message{
-		Host:         "test-host",
-		ShortMessage: "short message",
-		Timestamp:    1234567890,
-		Extra: map[string]interface{}{
-			"foo": "bar",
-		},
-	}
-	jsonBytes := messageToJSON(m)
-
-	expected, _ := json.Marshal(map[string]interface{}{
-		"host":          m.Host,
-		"short_message": m.ShortMessage,
-		"timestamp":     m.Timestamp,
-		//"_foo":          "bar",
-	})
-
-	assert.JSONEq(t, string(expected), string(jsonBytes))
+func TestWriter_Write2(t *testing.T) {
+	buf := new(bytes.Buffer)
+	g, err := NewWriter(buf, PacketEncoder(0, None, 0))
+	assert.Nil(t, err)
+	data := "qwrtyuio"
+	length, err := g.Write([]byte(data))
+	assert.Nil(t, err)
+	assert.Equal(t, len(data), length)
 }
 
 func TestDelimitedWriter(t *testing.T) {
@@ -114,13 +87,14 @@ type mockWriteResetter struct {
 func (m mockWriteResetter) Write(b []byte) (int, error) {
 	return m.w.Write(b)
 }
-func (m mockWriteResetter) Reset(io.Writer) {
+func (m mockWriteResetter) Close() error {
 	m.w.Write([]byte("RESET"))
+	return nil
 }
 
 func TestWriterSequence_Write(t *testing.T) {
 	buf := new(bytes.Buffer)
-	ws := newWriterSequence(buf, mockWriteResetter{})
+	ws := newWriterSequence(mockWriteResetter{buf})
 	ws.Write([]byte("ab"))
 	ws.Write([]byte("cd"))
 	ws.Write([]byte("ef"))

@@ -19,7 +19,7 @@ const (
 	Zlib
 )
 
-func NewPacket(w io.Writer, mtu uint32, compression Compression, level int) (*packet, error) {
+func newPacket(w io.Writer, mtu uint32, compression Compression, level int) (*packet, error) {
 	chunker := newChunker(w, mtu)
 	switch compression {
 	case None:
@@ -29,29 +29,21 @@ func NewPacket(w io.Writer, mtu uint32, compression Compression, level int) (*pa
 		if err != nil {
 			return nil, err
 		}
-		return &packet{newWriterSequence(chunker, zw)}, nil
+		return &packet{newWriterSequence(zw)}, nil
 	case Zlib:
 		zw, err := zlib.NewWriterLevel(chunker, level)
 		if err != nil {
 			return nil, err
 		}
-		return &packet{newWriterSequence(chunker, zw)}, nil
+		return &packet{newWriterSequence(zw)}, nil
 	default:
 		return nil, errors.New("invalid compression type")
 	}
 
 }
 
-func (p *packet) WriteMessage(m Message) error {
-	_, err := p.w.Write(messageToJSON(m))
-	return err
-}
-
-func (p *packet) Write(b []byte) (int, error) {
-	if err := p.WriteMessage(messageFromByteSlice(b)); err != nil {
-		return 0, err
-	}
-	return len(b), nil
+func (p packet) Write(b []byte) (int, error) {
+	return 0, nil
 }
 
 func newChunker(w io.Writer, mtu uint32) io.Writer {
@@ -59,19 +51,14 @@ func newChunker(w io.Writer, mtu uint32) io.Writer {
 }
 
 type writerSequence struct {
-	streamedWriter  io.Writer
-	restartedWriter WriteResetter
+	restartedWriter io.WriteCloser
 }
 
-type WriteResetter interface {
-	io.Writer
-	Reset(io.Writer)
-}
-
-func newWriterSequence(streamedWriter io.Writer, restartedWriter WriteResetter) io.Writer {
-	return writerSequence{streamedWriter, restartedWriter}
+func newWriterSequence(restartedWriter io.WriteCloser) io.Writer {
+	return writerSequence{restartedWriter}
 }
 
 func (ws writerSequence) Write(b []byte) (int, error) {
-	return 0, nil
+	defer ws.restartedWriter.Close()
+	return ws.restartedWriter.Write(b)
 }
