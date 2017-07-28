@@ -8,6 +8,7 @@ import (
 
 	"encoding/json"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -66,4 +67,35 @@ func TestMessageToJSON(t *testing.T) {
 	})
 
 	assert.JSONEq(t, string(expected), string(jsonBytes))
+}
+
+func TestDelimitedWriter(t *testing.T) {
+	buf := new(bytes.Buffer)
+	dw := newDelimitedWriter(buf, '-')
+
+	n, err := dw.Write([]byte("ab"))
+	assert.Nil(t, err)
+	assert.EqualValues(t, 2, n)
+
+	n, err = dw.Write([]byte("c"))
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1, n)
+
+	n, err = dw.Write([]byte("def"))
+	assert.Nil(t, err)
+	assert.EqualValues(t, 3, n)
+
+	assert.Equal(t, "ab-c-def-", buf.String())
+}
+
+type failingWriter struct{}
+
+func (w failingWriter) Write(b []byte) (int, error) {
+	return 1337, errors.New("failingWriter")
+}
+func TestDelimitedWriter_Write(t *testing.T) {
+	dw := newDelimitedWriter(failingWriter{}, 'x')
+	n, err := dw.Write([]byte("ab"))
+	assert.EqualError(t, err, "failingWriter")
+	assert.Equal(t, n, 1337)
 }
