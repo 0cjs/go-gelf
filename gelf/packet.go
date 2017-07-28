@@ -1,6 +1,9 @@
 package gelf
 
-import "io"
+import (
+	"errors"
+	"io"
+)
 
 type packet struct {
 	w io.Writer
@@ -14,8 +17,18 @@ const (
 	Zlib
 )
 
-func NewPacket(w io.Writer, mtu uint32, compression Compression, level int) packet {
-	return packet{w}
+func NewPacket(w io.Writer, mtu uint32, compression Compression, level int) (*packet, error) {
+	switch compression {
+	case None:
+		return &packet{newChunker(w)}, nil
+	case Gzip:
+		return newGzipPacketWriter(newChunker(w), level)
+	case Zlib:
+		return newZlibPacketWriter(newChunker(w), level)
+	default:
+		return nil, errors.New("invalid compression type")
+	}
+
 }
 
 func (p *packet) WriteMessage(m Message) error {
@@ -28,4 +41,16 @@ func (p *packet) Write(b []byte) (int, error) {
 		return 0, err
 	}
 	return len(b), nil
+}
+
+func newChunker(w io.Writer) io.Writer {
+	return w
+}
+
+func newGzipPacketWriter(w io.Writer, level int) (*packet, error) {
+	return &packet{w}, nil
+}
+
+func newZlibPacketWriter(w io.Writer, level int) (*packet, error) {
+	return &packet{w}, nil
 }

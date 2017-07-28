@@ -20,10 +20,14 @@ func TestNewStream(t *testing.T) {
 }
 
 func TestNewPacket(t *testing.T) {
-	_ = NewPacket(&buf, 0, None, 0) // Let the library choose the MTU
-	_ = NewPacket(&buf, 1400, Gzip, gzip.BestSpeed)
-	_ = NewPacket(&buf, 1400, Zlib, zlib.BestCompression)
-	_ = NewPacket(&buf, 1234, 5, 0)
+	_, err := NewPacket(&buf, 0, None, 0) // Let the library choose the MTU
+	assert.Nil(t, err)
+	_, err = NewPacket(&buf, 1400, Gzip, gzip.BestSpeed)
+	assert.Nil(t, err)
+	_, err = NewPacket(&buf, 1400, Zlib, zlib.BestCompression)
+	assert.Nil(t, err)
+	_, err = NewPacket(&buf, 1234, 5, 0)
+	assert.EqualError(t, err, "invalid compression type")
 }
 
 func TestStream_Write(t *testing.T) {
@@ -37,7 +41,8 @@ func TestStream_Write(t *testing.T) {
 
 func TestPacket_Write(t *testing.T) {
 	buf := new(bytes.Buffer)
-	g := NewPacket(buf, 0, None, 0)
+	g, err := NewPacket(buf, 0, None, 0)
+	assert.Nil(t, err)
 	data := "qwrtyuio"
 	length, err := g.Write([]byte(data))
 	assert.Nil(t, err)
