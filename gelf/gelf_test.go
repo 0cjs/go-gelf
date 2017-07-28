@@ -8,6 +8,8 @@ import (
 
 	"encoding/json"
 
+	"io"
+
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -103,4 +105,24 @@ func TestDelimitedWriter_Write(t *testing.T) {
 	n, err := dw.Write([]byte("ab"))
 	assert.EqualError(t, err, "failingWriter")
 	assert.Equal(t, n, 1337)
+}
+
+type mockWriteResetter struct {
+	w io.Writer
+}
+
+func (m mockWriteResetter) Write(b []byte) (int, error) {
+	return m.w.Write(b)
+}
+func (m mockWriteResetter) Reset(io.Writer) {
+	m.w.Write([]byte("RESET"))
+}
+
+func TestWriterSequence_Write(t *testing.T) {
+	buf := new(bytes.Buffer)
+	ws := newWriterSequence(buf, mockWriteResetter{})
+	ws.Write([]byte("ab"))
+	ws.Write([]byte("cd"))
+	ws.Write([]byte("ef"))
+	assert.Equal(t, "abRESETcdRESETefRESET", buf.String())
 }

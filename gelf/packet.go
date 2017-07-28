@@ -1,6 +1,8 @@
 package gelf
 
 import (
+	"compress/gzip"
+	"compress/zlib"
 	"errors"
 	"io"
 )
@@ -18,13 +20,22 @@ const (
 )
 
 func NewPacket(w io.Writer, mtu uint32, compression Compression, level int) (*packet, error) {
+	chunker := newChunker(w, mtu)
 	switch compression {
 	case None:
-		return &packet{newChunker(w)}, nil
+		return &packet{chunker}, nil
 	case Gzip:
-		return newGzipPacketWriter(newChunker(w), level)
+		zw, err := gzip.NewWriterLevel(chunker, level)
+		if err != nil {
+			return nil, err
+		}
+		return &packet{newWriterSequence(chunker, zw)}, nil
 	case Zlib:
-		return newZlibPacketWriter(newChunker(w), level)
+		zw, err := zlib.NewWriterLevel(chunker, level)
+		if err != nil {
+			return nil, err
+		}
+		return &packet{newWriterSequence(chunker, zw)}, nil
 	default:
 		return nil, errors.New("invalid compression type")
 	}
@@ -43,14 +54,24 @@ func (p *packet) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func newChunker(w io.Writer) io.Writer {
+func newChunker(w io.Writer, mtu uint32) io.Writer {
 	return w
 }
 
-func newGzipPacketWriter(w io.Writer, level int) (*packet, error) {
-	return &packet{w}, nil
+type writerSequence struct {
+	streamedWriter  io.Writer
+	restartedWriter WriteResetter
 }
 
-func newZlibPacketWriter(w io.Writer, level int) (*packet, error) {
-	return &packet{w}, nil
+type WriteResetter interface {
+	io.Writer
+	Reset(io.Writer)
+}
+
+func newWriterSequence(streamedWriter io.Writer, restartedWriter WriteResetter) io.Writer {
+	return writerSequence{streamedWriter, restartedWriter}
+}
+
+func (ws writerSequence) Write(b []byte) (int, error) {
+	return 0, nil
 }
