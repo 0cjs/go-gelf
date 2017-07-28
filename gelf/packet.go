@@ -3,6 +3,7 @@ package gelf
 import "io"
 
 type packet struct {
+	w io.Writer
 }
 
 type Compression uint8
@@ -14,11 +15,12 @@ const (
 )
 
 func NewPacket(w io.Writer, mtu uint32, compression Compression, level int) packet {
-	return packet{}
+	return packet{w}
 }
 
 func (p *packet) WriteMessage(m Message) error {
-	return nil
+	_, err := p.w.Write(messageToJSON(m))
+	return err
 }
 
 func (p *packet) Write(b []byte) (int, error) {

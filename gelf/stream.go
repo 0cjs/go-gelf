@@ -3,13 +3,15 @@ package gelf
 import "io"
 
 type stream struct {
+	w io.Writer
 }
 
 func NewStream(w io.Writer, delimiter byte) stream {
-	return stream{}
+	return stream{w}
 }
 func (s *stream) WriteMessage(m Message) error {
-	return nil
+	_, err := s.w.Write(messageToJSON(m))
+	return err
 }
 
 func (s *stream) Write(b []byte) (int, error) {
