@@ -13,7 +13,8 @@ type GELFWriter interface {
 type encoderType uint8
 
 const (
-	streamEncoder encoderType = iota
+	_ encoderType = iota
+	streamEncoder
 	packetEncoder
 )
 

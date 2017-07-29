@@ -27,6 +27,13 @@ func TestNewWriter(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = NewWriter(&buf, PacketEncoder(1234, 5, 0))
 	assert.EqualError(t, err, "invalid compression type")
+	_, err = NewWriter(&buf, PacketEncoder(1400, Gzip, -3))
+	assert.EqualError(t, err, "gzip: invalid compression level: -3")
+	_, err = NewWriter(&buf, PacketEncoder(1400, Zlib, 10))
+	assert.EqualError(t, err, "zlib: invalid compression level: 10")
+
+	_, err = NewWriter(&buf, encoderOptions{})
+	assert.EqualError(t, err, "invalid encoder type")
 }
 
 func TestWriter_Write(t *testing.T) {
