@@ -13,33 +13,29 @@ import (
 
 var buf bytes.Buffer
 
-func TestNewWriter(t *testing.T) {
-	_, err := NewWriter(&buf, StreamEncoder(0))
-	assert.Nil(t, err)
-	_, err = NewWriter(&buf, StreamEncoder('\n'))
-	assert.Nil(t, err)
+func TestNewStream(t *testing.T) {
+	_ = NewStream(&buf, 0)
+	_ = NewStream(&buf, '\n')
+}
 
-	_, err = NewWriter(&buf, PacketEncoder(0, None, 0)) // Let the library choose the MTU
+func TestNewPacket(t *testing.T) {
+	_, err := NewPacket(&buf, 0, None, 0) // Let the library choose the MTU
 	assert.Nil(t, err)
-	_, err = NewWriter(&buf, PacketEncoder(1400, Gzip, gzip.BestSpeed))
+	_, err = NewPacket(&buf, 1400, Gzip, gzip.BestSpeed)
 	assert.Nil(t, err)
-	_, err = NewWriter(&buf, PacketEncoder(1400, Zlib, zlib.BestCompression))
+	_, err = NewPacket(&buf, 1400, Zlib, zlib.BestCompression)
 	assert.Nil(t, err)
-	_, err = NewWriter(&buf, PacketEncoder(1234, 5, 0))
+	_, err = NewPacket(&buf, 1234, 5, 0)
 	assert.EqualError(t, err, "invalid compression type")
-	_, err = NewWriter(&buf, PacketEncoder(1400, Gzip, -3))
+	_, err = NewPacket(&buf, 1400, Gzip, -3)
 	assert.EqualError(t, err, "gzip: invalid compression level: -3")
-	_, err = NewWriter(&buf, PacketEncoder(1400, Zlib, 10))
+	_, err = NewPacket(&buf, 1400, Zlib, 10)
 	assert.EqualError(t, err, "zlib: invalid compression level: 10")
-
-	_, err = NewWriter(&buf, encoderOptions{})
-	assert.EqualError(t, err, "invalid encoder type")
 }
 
 func TestWriter_Write(t *testing.T) {
 	buf := new(bytes.Buffer)
-	g, err := NewWriter(buf, StreamEncoder(0))
-	assert.Nil(t, err)
+	g := NewStream(buf, 0)
 	data := "qwrtyuio"
 	length, err := g.Write([]byte(data))
 	assert.Nil(t, err)
@@ -48,7 +44,7 @@ func TestWriter_Write(t *testing.T) {
 
 func TestWriter_Write2(t *testing.T) {
 	buf := new(bytes.Buffer)
-	g, err := NewWriter(buf, PacketEncoder(0, None, 0))
+	g, err := NewPacket(buf, 0, None, 0)
 	assert.Nil(t, err)
 	data := "qwrtyuio"
 	length, err := g.Write([]byte(data))

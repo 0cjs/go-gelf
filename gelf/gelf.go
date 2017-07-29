@@ -1,7 +1,6 @@
 package gelf
 
 import (
-	"errors"
 	"io"
 )
 
@@ -10,56 +9,20 @@ type GELFWriter interface {
 	WriteMessage(Message) error
 }
 
-type encoderType uint8
-
-const (
-	_ encoderType = iota
-	streamEncoder
-	packetEncoder
-)
-
-type encoderOptions struct {
-	eType encoderType
-	// Stream options
-	delimiter byte
-	// Packet options
-	mtu         uint32
-	compression Compression
-	level       int
-}
-
-func StreamEncoder(d byte) encoderOptions {
-	return encoderOptions{
-		eType:     streamEncoder,
-		delimiter: d,
-	}
-}
-
-func PacketEncoder(mtu uint32, compression Compression, level int) encoderOptions {
-	return encoderOptions{
-		eType:       packetEncoder,
-		mtu:         mtu,
-		compression: compression,
-		level:       level,
-	}
-}
-
 type writer struct {
 	w io.Writer
 }
 
-func NewWriter(w io.Writer, eo encoderOptions) (*writer, error) {
-	switch eo.eType {
-	case streamEncoder:
-		return &writer{newStream(w, eo.delimiter)}, nil
-	case packetEncoder:
-		p, err := newPacket(w, eo.mtu, eo.compression, eo.level)
-		if err != nil {
-			return nil, err
-		}
-		return &writer{p}, nil
+func NewStream(w io.Writer, delimiter byte) *writer {
+	return &writer{newStream(w, delimiter)}
+}
+
+func NewPacket(w io.Writer, mtu uint32, compression Compression, level int) (*writer, error) {
+	p, err := newPacket(w, mtu, compression, level)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("invalid encoder type")
+	return &writer{p}, nil
 }
 
 func (w *writer) WriteMessage(m Message) error {
