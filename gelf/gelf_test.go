@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -78,4 +81,41 @@ func TestWriter_WriteMessage(t *testing.T) {
 	expected.Write(m2.Bytes())
 	expected.WriteByte(0)
 	assert.Equal(t, expected.String(), buf.String())
+}
+
+func BenchmarkStream_WriteMessage_WithExtra(b *testing.B) {
+	hostname, err := os.Hostname()
+	assert.Nil(b, err)
+
+	w := NewStream(ioutil.Discard, 0)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		w.WriteMessage(Message{
+			Host:         hostname,
+			ShortMessage: "short message",
+			FullMessage:  "full message",
+			Timestamp:    float64(time.Now().Unix()),
+			Level:        6, // info
+			Extra:        map[string]interface{}{"_file": "1234", "_line": "3456"},
+		})
+	}
+}
+
+func BenchmarkStream_WriteMessage_WithoutExtra(b *testing.B) {
+	hostname, err := os.Hostname()
+	assert.Nil(b, err)
+
+	w := NewStream(ioutil.Discard, 0)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		w.WriteMessage(Message{
+			Host:         hostname,
+			ShortMessage: "short message",
+			FullMessage:  "full message",
+			Timestamp:    float64(time.Now().Unix()),
+			Level:        6, // info
+		})
+	}
 }
