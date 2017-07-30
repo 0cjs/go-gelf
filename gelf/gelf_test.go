@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"errors"
-	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -123,25 +122,4 @@ func TestDelimitedWriter_Write4(t *testing.T) {
 	assert.Panics(t, func() {
 		dw.Write([]byte("ab"))
 	})
-}
-
-type mockWriteResetter struct {
-	w io.Writer
-}
-
-func (m mockWriteResetter) Write(b []byte) (int, error) {
-	return m.w.Write(b)
-}
-func (m mockWriteResetter) Close() error {
-	m.w.Write([]byte("RESET"))
-	return nil
-}
-
-func TestWriterSequence_Write(t *testing.T) {
-	buf := new(bytes.Buffer)
-	ws := newWriterSequence(mockWriteResetter{buf})
-	ws.Write([]byte("ab"))
-	ws.Write([]byte("cd"))
-	ws.Write([]byte("ef"))
-	assert.Equal(t, "abRESETcdRESETefRESET", buf.String())
 }
