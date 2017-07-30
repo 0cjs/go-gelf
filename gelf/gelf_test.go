@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,4 +49,33 @@ func TestWriter_Write2(t *testing.T) {
 	length, err := g.Write([]byte(data))
 	assert.Nil(t, err)
 	assert.Equal(t, len(data), length)
+}
+
+func TestWriter_WriteMessage(t *testing.T) {
+	buf := new(bytes.Buffer)
+	w := NewStream(buf, 0)
+
+	m := Message{
+		Host:         "test-host",
+		ShortMessage: "short message",
+		FullMessage:  strings.Repeat("qwertyuiop", 500),
+		Timestamp:    1234567890,
+		Level:        6,
+		Extra: map[string]interface{}{
+			"foo": "bar",
+		},
+	}
+	assert.Nil(t, w.WriteMessage(m))
+
+	m2 := Message(m)
+	m2.Timestamp = 1234567890
+	m2.FullMessage = strings.Repeat("asdfgh", 50)
+	assert.Nil(t, w.WriteMessage(m2))
+
+	expected := bytes.NewBuffer(make([]byte, 0, len(m.Bytes())+len(m2.Bytes())+2))
+	expected.Write(m.Bytes())
+	expected.WriteByte(0)
+	expected.Write(m2.Bytes())
+	expected.WriteByte(0)
+	assert.Equal(t, expected.String(), buf.String())
 }

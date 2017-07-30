@@ -14,7 +14,7 @@ func newStream(w io.Writer, delimiter byte) stream {
 }
 
 func (s stream) Write(b []byte) (int, error) {
-	return 0, nil
+	return s.w.Write(b)
 }
 
 type delimitedWriter struct {
