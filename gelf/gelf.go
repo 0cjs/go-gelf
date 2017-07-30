@@ -26,7 +26,7 @@ func NewPacket(w io.Writer, mtu uint32, compression Compression, level int) (*wr
 }
 
 func (w *writer) WriteMessage(m Message) error {
-	_, err := w.w.Write(messageToJSON(m))
+	_, err := w.w.Write(m.Bytes())
 	return err
 }
 
