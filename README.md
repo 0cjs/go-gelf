@@ -2,48 +2,51 @@ go-gelf - GELF Library and Writer for Go
 ========================================
 
 [GELF] (Graylog Extended Log Format) is an application-level logging
-protocol that avoids many of the shortcomings of [syslog]. While it
-can be run over any stream or datagram transport protocol, it has
-special support ([chunking]) to allow long messages to be split over
-multiple datagrams.
+protocol that avoids many of the shortcomings of [syslog]. This
+library formats and sends GELF messages.
 
-Versions
+
+go-gelf Versions
+----------------
+
+The different versions of go-gelf are distinguished using [semantic
+versioning] and offered via [gopkg.in]. Thus, the import (and `go
+get`) path for the `gelf` package at the latest 1.x.x version (API
+version 1) is:
+
+    gopkg.in/Graylog2/go-gelf.v1/gelf
+
+For temporary backwards compatibility, the `github.com/Graylog2/go-gelf`
+path currently serves the `v1` branch. However, this will be changed
+to the `master` branch in the future, so please ensure any clients
+change to the the correct versioned path described above or they will
+break.
+
+There are currently two major versions of the API:
+
+* **[v1]** is the original version, offering UDP connectivity only,
+  and is initialized with the `NewWriter()` function.
+* **[v2]** adds TCP support and changes the constructors to
+  `NewTCPWriter()` and `NewUDPWriter()`.
+
+
+Overview
 --------
 
-In order to enable versionning of this package with Go, this project
-is using GoPkg.in. The default branch of this project will be v1
-for some time to prevent breaking clients. We encourage all project
-to change their imports to the new GoPkg.in URIs as soon as possible.
+[GELF] can be run over any stream or datagram transport protocol. When
+used over a datagram protocol it has support for compression to
+shorten messages and [chunking] to allow long messages to be split
+over multiple datagrams.
 
-To see up to date code, make sure to switch to the master branch.
-
-v1.0.0
-------
-
-This implementation currently supports UDP and TCP as a transport
-protocol. TLS is unsupported.
+This implementation supports UDP and TCP as a transport protocol. TLS
+and other streams (e.g., to a file) are currently unsupported, but are
+planned for a new version of the API.
 
 The library provides an API that applications can use to log messages
 directly to a Graylog server and an `io.Writer` that can be used to
 redirect the standard library's log messages (`os.Stdout`) to a
 Graylog server.
 
-
-Installing
-----------
-
-go-gelf is go get-able:
-
-    go get gopkg.in/Graylog2/go-gelf.v1/gelf
-
-    or
-
-	go get github.com/Graylog2/go-gelf/gelf
-
-This will get you version 1.0.0, with only UDP support and legacy API.
-Newer versions are available through GoPkg.in:
-
-    go get gopkg.in/Graylog2/go-gelf.v2/gelf
 
 Usage
 -----
@@ -114,5 +117,9 @@ go-gelf is offered under the MIT license, see LICENSE for details.
 
 
 [GELF]: http://docs.graylog.org/en/2.2/pages/gelf.html
-[syslog]: https://tools.ietf.org/html/rfc5424
 [chunking]: http://docs.graylog.org/en/2.2/pages/gelf.html#chunked-gelf
+[gopkg.in]: https://labix.org/gopkg.in
+[semantic versioning]: http://semver.org
+[syslog]: https://tools.ietf.org/html/rfc5424
+[v1]: https://github.com/Graylog2/go-gelf/tree/v1
+[v2]: https://github.com/Graylog2/go-gelf/tree/v2
