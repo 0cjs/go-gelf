@@ -28,10 +28,6 @@ directly to a Graylog server and an `io.Writer` that can be used to
 redirect the standard library's log messages (`os.Stdout`) to a
 Graylog server.
 
-[GELF]: http://docs.graylog.org/en/2.2/pages/gelf.html
-[syslog]: https://tools.ietf.org/html/rfc5424
-[chunking]: http://docs.graylog.org/en/2.2/pages/gelf.html#chunked-gelf
-
 
 Installing
 ----------
@@ -114,3 +110,9 @@ License
 -------
 
 go-gelf is offered under the MIT license, see LICENSE for details.
+
+
+
+[GELF]: http://docs.graylog.org/en/2.2/pages/gelf.html
+[syslog]: https://tools.ietf.org/html/rfc5424
+[chunking]: http://docs.graylog.org/en/2.2/pages/gelf.html#chunked-gelf
